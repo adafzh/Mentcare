@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Store user profile information and preferences",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "avatar": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "createdAt", "updatedAt"]
+    },
+    "ScanResult": {
+      "title": "Scan Result",
+      "description": "Records from the AI stress/anxiety scan",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "dateString": { "type": "string" },
+        "mood": { "type": "string" },
+        "score": { "type": "number" },
+        "answers": { 
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "eyeMovementPoints": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "mood", "score", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/scans/{scanId}": {
+      "schema": "ScanResult",
+      "description": "Anonymized or user-linked scan pulse data"
+    }
+  }
+}

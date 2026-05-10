@@ -1,0 +1,9 @@
+{
+  "name": "Mentcare",
+  "description": "A comprehensive mental health and wellness platform for mood tracking, therapist consultation, and emotional support.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": []
+}

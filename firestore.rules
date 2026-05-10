@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- Validation Helpers ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'createdAt', 'updatedAt'])
+        && data.keys().size() <= 6
+        && data.name is string && data.name.size() <= 100
+        && (data.get('category', null) == null || (data.category is string && data.category.size() <= 50))
+        && (data.get('avatar', null) == null || (data.avatar is string && data.avatar.size() <= 1000))
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function isValidScan(data) {
+      return data.keys().hasAll(['userId', 'mood', 'score', 'createdAt', 'answers', 'eyeMovementPoints', 'dateString'])
+        && data.keys().size() == 7
+        && data.userId == request.auth.uid
+        && data.mood is string && data.mood.size() <= 50
+        && data.score is number && data.score >= 0 && data.score <= 100
+        && data.answers is list && data.answers.size() <= 20
+        && data.eyeMovementPoints is number
+        && data.dateString is string && data.dateString.size() <= 50
+        && data.createdAt == request.time;
+    }
+
+    // --- Collection Routes ---
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) 
+        && request.resource.data.diff(resource.data).affectedKeys().hasAny(['name', 'category', 'avatar', 'updatedAt'])
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    match /scans/{scanId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidScan(request.resource.data);
+      allow update, delete: if false; // Scans are immutable history
+    }
+  }
+}
